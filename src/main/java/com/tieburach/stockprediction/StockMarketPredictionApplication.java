@@ -1,14 +1,13 @@
 package com.tieburach.stockprediction;
 
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 
 @SpringBootApplication
 public class StockMarketPredictionApplication {
-
     public static void main(String[] args) {
-        //test commit
-        SpringApplication.run(StockMarketPredictionApplication.class, args);
+        SpringApplicationBuilder builder = new SpringApplicationBuilder(StockMarketPredictionApplication.class);
+        builder.headless(false);
+        builder.run(args);
     }
-
 }
