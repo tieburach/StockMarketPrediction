@@ -26,8 +26,7 @@ public class StockPricePrediction {
         this.recurrentNetwork = recurrentNetwork;
     }
 
-    public void initialize(List<WIGDataEntity> list) {
-        StockDataSetIterator iterator = new StockDataSetIterator(list, properties.getBatchSize(), properties.getBptt(), properties.getDaysToShow());
+    public MultiLayerNetwork initialize(StockDataSetIterator iterator) {
         MultiLayerNetwork net = recurrentNetwork.buildLstmNetworks(iterator.inputColumns(), iterator.totalOutcomes());
         for (int i = 0; i < properties.getEpochs(); i++) {
             while (iterator.hasNext()) {
@@ -36,22 +35,21 @@ public class StockPricePrediction {
             iterator.reset();
             net.rnnClearPreviousState();
         }
-        predict(net, iterator);
+        return net;
     }
 
-    private void predict(MultiLayerNetwork net, StockDataSetIterator iterator) {
+    public void predict(MultiLayerNetwork net, StockDataSetIterator iterator, int daysAhead) {
         List<Pair<INDArray, INDArray>> testData = iterator.getTestDataSet();
         INDArray max = Nd4j.create(iterator.getMaxValuesInFeature());
         INDArray min = Nd4j.create(iterator.getMinValuesInFeature());
         INDArray[] predicts = new INDArray[testData.size()];
         INDArray[] predictsNormalized = new INDArray[testData.size()];
         INDArray[] actuals = new INDArray[testData.size()];
-        int daysAhead = properties.getDaysAhead() - 1;
         int bptt = properties.getBptt();
         for (int i = 0; i < testData.size(); i++) {
             INDArray currentDataArray = testData.get(i).getKey();
-            if (i >= daysAhead) {
-                currentDataArray = modifyCurrentDataArray(currentDataArray, i, daysAhead, predictsNormalized);
+            if (i >= daysAhead - 1) {
+                currentDataArray = modifyCurrentDataArray(currentDataArray, i, daysAhead - 1, predictsNormalized);
             }
             predictsNormalized[i] = net.rnnTimeStep(currentDataArray).getRow(bptt - 1);
             predicts[i] = net.rnnTimeStep(currentDataArray).getRow(bptt - 1).mul(max.sub(min)).add(min);
@@ -86,5 +84,9 @@ public class StockPricePrediction {
             }
         }
         return input;
+    }
+
+    public StockDataSetIterator initializeIterator(List<WIGDataEntity> entities) {
+        return new StockDataSetIterator(entities, properties.getBatchSize(), properties.getBptt(), properties.getDaysToShow());
     }
 }

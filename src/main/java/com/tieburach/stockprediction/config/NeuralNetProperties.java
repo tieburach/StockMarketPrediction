@@ -17,8 +17,4 @@ public class NeuralNetProperties {
     private int daysToShow;
     @Value("1")
     private int epochs;
-    @Value("${net.days_ahead}")
-    private int daysAhead;
-    @Value("${net.iterations}")
-    private int iterations;
 }

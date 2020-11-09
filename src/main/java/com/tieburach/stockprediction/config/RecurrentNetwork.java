@@ -35,7 +35,6 @@ public class RecurrentNetwork {
     public MultiLayerNetwork buildLstmNetworks(int nIn, int nOut) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(seed)
-                .iterations(properties.getIterations())
                 .learningRate(learningRate)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .weightInit(WeightInit.XAVIER)
