@@ -12,14 +12,12 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class GraphicsUtil {
-    public static void draw(List<Double> predictedValues, List<Double> actualValues) {
-        List<Integer> index = new ArrayList<>();
-        for (int i = 0; i < predictedValues.size(); i++) {
-            index.add(i);
+    public static void draw(double[] predictedValues, double[] actualValues) {
+        int[] index = new int[predictedValues.length];
+        for (int i = 0; i < predictedValues.length; i++) {
+            index[i] = i;
         }
         int min = minValue(predictedValues, actualValues);
         int max = maxValue(predictedValues, actualValues);
@@ -39,8 +37,8 @@ public class GraphicsUtil {
         );
         XYPlot xyPlot = chart.getXYPlot();
         final NumberAxis domainAxis = (NumberAxis) xyPlot.getDomainAxis();
-        domainAxis.setRange(index.get(0), index.get(index.size() - 1) + 2);
-        domainAxis.setTickUnit(new NumberTickUnit(Math.floor((double) index.size() / 10)));
+        domainAxis.setRange(index[0], index[index.length - 1] + 2);
+        domainAxis.setTickUnit(new NumberTickUnit(Math.floor((double) index.length / 10)));
         domainAxis.setVerticalTickLabels(true);
         final NumberAxis rangeAxis = (NumberAxis) xyPlot.getRangeAxis();
         rangeAxis.setRange(min, max);
@@ -53,35 +51,35 @@ public class GraphicsUtil {
         f.setVisible(true);
     }
 
-    private static void addSeries(final XYSeriesCollection dataSet, List<Integer> x, List<Double> y, final String label) {
+    private static void addSeries(final XYSeriesCollection dataSet, int[] x, double[] y, final String label) {
         final XYSeries s = new XYSeries(label);
-        for (int j = 0; j < x.size(); j++) {
-            s.add(x.get(j), y.get(j));
+        for (int j = 0; j < x.length; j++) {
+            s.add(x[j], y[j]);
         }
         dataSet.addSeries(s);
     }
 
-    private static int minValue(List<Double> predicts, List<Double> actuals) {
+    private static int minValue(double[] predicts, double[] actuals) {
         double min = Integer.MAX_VALUE;
-        for (int i = 0; i < predicts.size(); i++) {
-            if (min > predicts.get(i)) {
-                min = predicts.get(i);
+        for (int i = 0; i < predicts.length; i++) {
+            if (min > predicts[i]) {
+                min = predicts[i];
             }
-            if (min > actuals.get(i)) {
-                min = actuals.get(i);
+            if (min > actuals[i]) {
+                min = actuals[i];
             }
         }
         return (int) (min * 0.95);
     }
 
-    private static int maxValue(List<Double> predicts, List<Double> actuals) {
+    private static int maxValue(double[] predicts, double[] actuals) {
         double max = Integer.MIN_VALUE;
-        for (int i = 0; i < predicts.size(); i++) {
-            if (max < predicts.get(i)) {
-                max = predicts.get(i);
+        for (int i = 0; i < predicts.length; i++) {
+            if (max < predicts[i]) {
+                max = predicts[i];
             }
-            if (max < actuals.get(i)) {
-                max = actuals.get(i);
+            if (max < actuals[i]) {
+                max = actuals[i];
             }
         }
         return (int) (max * 1.05);

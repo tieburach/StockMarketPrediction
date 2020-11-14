@@ -21,7 +21,6 @@ public class RecurrentNetwork {
     private static final double learningRate = 0.01;
     private static final int seed = 1;
     private static final int lstmLayer1Size = 256;
-    private static final int lstmLayer2Size = 256;
     private static final int denseLayerSize = 32;
     private static final double dropoutRatio = 0.5;
 
@@ -32,8 +31,8 @@ public class RecurrentNetwork {
         this.properties = properties;
     }
 
-    public MultiLayerNetwork buildLstmNetworks(int nIn, int nOut) {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+    public MultiLayerConfiguration getMultiLayerConfiguration(int nIn, int nOut) {
+        return new NeuralNetConfiguration.Builder()
                 .seed(seed)
                 .learningRate(learningRate)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -49,19 +48,12 @@ public class RecurrentNetwork {
                         .gateActivationFunction(Activation.HARDSIGMOID)
                         .dropOut(dropoutRatio)
                         .build())
-                .layer(1, new GravesLSTM.Builder()
+                .layer(1, new DenseLayer.Builder()
                         .nIn(lstmLayer1Size)
-                        .nOut(lstmLayer2Size)
-                        .activation(Activation.TANH)
-                        .gateActivationFunction(Activation.HARDSIGMOID)
-                        .dropOut(dropoutRatio)
-                        .build())
-                .layer(2, new DenseLayer.Builder()
-                        .nIn(lstmLayer2Size)
                         .nOut(denseLayerSize)
                         .activation(Activation.RELU)
                         .build())
-                .layer(3, new RnnOutputLayer.Builder()
+                .layer(2, new RnnOutputLayer.Builder()
                         .nIn(denseLayerSize)
                         .nOut(nOut)
                         .activation(Activation.IDENTITY)
@@ -73,10 +65,5 @@ public class RecurrentNetwork {
                 .pretrain(false)
                 .backprop(true)
                 .build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-        net.setListeners(new ScoreIterationListener(10));
-        return net;
     }
 }

@@ -4,14 +4,12 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.FileOutputStream;
 import java.time.LocalDateTime;
-import java.util.List;
 
 public class ExcelUtils {
-    public static void writeToExcel(INDArray[] predicts, INDArray[] actuals, List<String> datesList) {
+    public static void writeToExcel(double[] predicts, double[] actuals) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Prediction");
         Row row = sheet.createRow(0);
@@ -25,11 +23,11 @@ public class ExcelUtils {
         for (int i = 0; i < predicts.length; i++) {
             row = sheet.createRow(rowCount);
             cell = row.createCell(0);
-            cell.setCellValue(datesList.get(i));
+            cell.setCellValue("DATE");
             cell = row.createCell(1);
-            cell.setCellValue(actuals[i].getDouble(1));
+            cell.setCellValue(actuals[i]);
             cell = row.createCell(2);
-            cell.setCellValue(predicts[i].getDouble(1));
+            cell.setCellValue(predicts[i]);
             rowCount++;
         }
         for (int i = 0; i < 3; i++) {

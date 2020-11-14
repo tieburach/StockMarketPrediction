@@ -15,6 +15,4 @@ public class NeuralNetProperties {
     private int batchSize;
     @Value("${net.days_to_show}")
     private int daysToShow;
-    @Value("1")
-    private int epochs;
 }
