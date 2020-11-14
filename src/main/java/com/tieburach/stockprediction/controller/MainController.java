@@ -17,7 +17,7 @@ import java.util.List;
 @RequestMapping
 public class MainController {
     private static final LocalDate START = LocalDate.of(2000, 1, 1);
-    private static final LocalDate END = LocalDate.of(2020, 1, 1);
+    private static final LocalDate END = LocalDate.of(2019, 1, 1);
     private final WIGDataRepository repository;
     private final StockPricePrediction pricePrediction;
 

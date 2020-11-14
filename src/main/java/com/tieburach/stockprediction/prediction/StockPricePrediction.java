@@ -77,7 +77,7 @@ public class StockPricePrediction {
 
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(8))
-                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(5, TimeUnit.MINUTES))
                 .scoreCalculator(new DataSetLossCalculator(myTestData, true))
                 .evaluateEveryNEpochs(1)
                 .build();
