@@ -50,7 +50,7 @@ public class StockDataSetIterator implements DataSetIterator {
                 int column = i - start;
                 populateINDArray(input, index, currentRecord, column);
                 nextRecord = train.get(i + 1);
-                populateINDArray(label, index, nextRecord, column);
+                populateINDArrayLabel(label, index, nextRecord, column);
                 currentRecord = nextRecord;
             }
             if (startOffset.size() == 0) {
@@ -61,6 +61,13 @@ public class StockDataSetIterator implements DataSetIterator {
     }
 
     private void populateINDArray(INDArray array, int index, WIGDataEntity dataElement, int column) {
+        array.putScalar(new int[]{index, 0, column}, (dataElement.getOpen() - minValuesInFeature[0]) / (maxValuesInFeature[0] - minValuesInFeature[0]));
+        array.putScalar(new int[]{index, 1, column}, (dataElement.getClose() - minValuesInFeature[1]) / (maxValuesInFeature[1] - minValuesInFeature[1]));
+        array.putScalar(new int[]{index, 2, column}, (dataElement.getLow() - minValuesInFeature[2]) / (maxValuesInFeature[2] - minValuesInFeature[2]));
+        array.putScalar(new int[]{index, 3, column}, (dataElement.getHigh() - minValuesInFeature[3]) / (maxValuesInFeature[3] - minValuesInFeature[3]));
+    }
+
+    private void populateINDArrayLabel(INDArray array, int index, WIGDataEntity dataElement, int column) {
         array.putScalar(new int[]{index, 0, column}, (dataElement.getClose() - minValuesInFeature[1]) / (maxValuesInFeature[1] - minValuesInFeature[1]));
     }
 
