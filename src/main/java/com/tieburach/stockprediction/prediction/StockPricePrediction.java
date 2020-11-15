@@ -2,6 +2,7 @@ package com.tieburach.stockprediction.prediction;
 
 import com.tieburach.stockprediction.config.NeuralNetProperties;
 import com.tieburach.stockprediction.config.RecurrentNetwork;
+import com.tieburach.stockprediction.model.DataEntity;
 import com.tieburach.stockprediction.model.WIGDataEntity;
 import com.tieburach.stockprediction.util.ExcelUtils;
 import com.tieburach.stockprediction.util.GraphicsUtil;
@@ -15,6 +16,7 @@ import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,17 +41,25 @@ public class StockPricePrediction {
     private List<Pair<INDArray, INDArray>> testData;
 
 
-    private void initializeMinAndMax(List<WIGDataEntity> wigDataEntities) {
+    private void initializeMinAndMax(List<DataEntity> wigDataEntities) {
         for (int i = 0; i < maxValuesInFeature.length; i++) {
             maxValuesInFeature[i] = Double.MIN_VALUE;
             minValuesInFeature[i] = Double.MAX_VALUE;
         }
 
-        for (WIGDataEntity entity : wigDataEntities) {
+        for (DataEntity entity : wigDataEntities) {
             setMinAndMax(entity.getOpen(), 0);
             setMinAndMax(entity.getClose(), 1);
             setMinAndMax(entity.getLow(), 2);
             setMinAndMax(entity.getHigh(), 3);
+//            setMinAndMax(entity.getDax_open(), 4);
+//            setMinAndMax(entity.getDax_close(), 5);
+//            setMinAndMax(entity.getDax_low(), 6);
+//            setMinAndMax(entity.getDax_high(), 7);
+//            setMinAndMax(entity.getSpx_open(), 8);
+//            setMinAndMax(entity.getSpx_close(), 9);
+//            setMinAndMax(entity.getSpx_low(), 10);
+//            setMinAndMax(entity.getSpx_high(), 11);
         }
     }
 
@@ -59,31 +69,31 @@ public class StockPricePrediction {
         this.recurrentNetwork = recurrentNetwork;
     }
 
-    public void initialize(List<WIGDataEntity> entities) {
+    public void initialize(List<DataEntity> entities) {
         initializeMinAndMax(entities);
         int index = (int) Math.round(entities.size() * splitRatio);
         int index2 = (int) Math.round(entities.size() * splitRatio2);
 
-        List<WIGDataEntity> learningEntities = entities.subList(0, index);
-        List<WIGDataEntity> validationEntities = entities.subList(index, index2);
-        List<WIGDataEntity> testEntities = entities.subList(index2, entities.size());
+
+        List<DataEntity> learningEntities = entities.subList(0, index);
+        List<DataEntity> validationEntities = entities.subList(index, index2);
+        List<DataEntity> testEntities = entities.subList(index2, entities.size());
         generateTestData(testEntities);
 
 
         MultiLayerConfiguration myNetworkConfiguration = recurrentNetwork.getMultiLayerConfiguration(VECTOR_SIZE, totalOutcomes);
-        DataSetIterator myTrainData = initializeTestIterator(learningEntities);
-        DataSetIterator myTestData = initializeValidationIterator(validationEntities);
-
+        DataSetIterator trainData = initializeIterator(learningEntities);
+        DataSetIterator validationData = initializeIterator(validationEntities);
 
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(2))
-                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(6, TimeUnit.MINUTES))
-                .scoreCalculator(new DataSetLossCalculator(myTestData, true))
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(10))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(4, TimeUnit.MINUTES))
+                .scoreCalculator(new DataSetLossCalculator(validationData, true))
                 .evaluateEveryNEpochs(1)
                 .build();
 
 
-        EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, myNetworkConfiguration, myTrainData);
+        EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, myNetworkConfiguration, trainData);
 
         EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
 
@@ -96,20 +106,28 @@ public class StockPricePrediction {
         net = result.getBestModel();
     }
 
-    private void generateTestData(List<WIGDataEntity> stockDataList) {
+    private void generateTestData(List<DataEntity> stockDataList) {
         int bptt = properties.getBptt();
         int window = bptt + properties.getDaysAhead();
         List<Pair<INDArray, INDArray>> test = new ArrayList<>();
         for (int i = 0; i < stockDataList.size() - window; i++) {
             INDArray input = Nd4j.create(new int[]{bptt, VECTOR_SIZE}, 'f');
             for (int j = i; j < i + bptt; j++) {
-                WIGDataEntity stock = stockDataList.get(j);
+                DataEntity stock = stockDataList.get(j);
                 input.putScalar(new int[]{j - i, 0}, (stock.getOpen() - minValuesInFeature[0]) / (maxValuesInFeature[0] - minValuesInFeature[0]));
                 input.putScalar(new int[]{j - i, 1}, (stock.getClose() - minValuesInFeature[1]) / (maxValuesInFeature[1] - minValuesInFeature[1]));
                 input.putScalar(new int[]{j - i, 2}, (stock.getLow() - minValuesInFeature[2]) / (maxValuesInFeature[2] - minValuesInFeature[2]));
                 input.putScalar(new int[]{j - i, 3}, (stock.getHigh() - minValuesInFeature[3]) / (maxValuesInFeature[3] - minValuesInFeature[3]));
+//                input.putScalar(new int[]{j - i, 4}, (stock.getDax_open() - minValuesInFeature[4]) / (maxValuesInFeature[4] - minValuesInFeature[4]));
+//                input.putScalar(new int[]{j - i, 5}, (stock.getDax_close() - minValuesInFeature[5]) / (maxValuesInFeature[5] - minValuesInFeature[5]));
+//                input.putScalar(new int[]{j - i, 6}, (stock.getDax_low() - minValuesInFeature[6]) / (maxValuesInFeature[6] - minValuesInFeature[6]));
+//                input.putScalar(new int[]{j - i, 7}, (stock.getDax_high() - minValuesInFeature[7]) / (maxValuesInFeature[7] - minValuesInFeature[7]));
+//                input.putScalar(new int[]{j - i, 8}, (stock.getSpx_open() - minValuesInFeature[8]) / (maxValuesInFeature[8] - minValuesInFeature[8]));
+//                input.putScalar(new int[]{j - i, 9}, (stock.getSpx_close() - minValuesInFeature[9]) / (maxValuesInFeature[9] - minValuesInFeature[9]));
+//                input.putScalar(new int[]{j - i, 10}, (stock.getSpx_low() - minValuesInFeature[10]) / (maxValuesInFeature[10] - minValuesInFeature[10]));
+//                input.putScalar(new int[]{j - i, 11}, (stock.getSpx_high() - minValuesInFeature[11]) / (maxValuesInFeature[11] - minValuesInFeature[11]));
             }
-            WIGDataEntity stock = stockDataList.get(i + window - 1);
+            DataEntity stock = stockDataList.get(i + window - 1);
             INDArray label = Nd4j.create(new int[]{1}, 'f');
             label.putScalar(new int[]{0}, stock.getClose());
             test.add(new Pair<>(input, label));
@@ -129,16 +147,18 @@ public class StockPricePrediction {
         }
 
         ExcelUtils.writeToExcel(predicts, actuals);
+        double mape = 0;
+        for (int i = 0; i < predicts.length; i++) {
+            mape += Math.abs((actuals[i] - predicts[i]) / actuals[i]);
+        }
+        mape = mape / predicts.length;
+        System.out.println("Mape ERROR IN %: " + (mape * 100));
 
         GraphicsUtil.draw(predicts, actuals);
     }
 
 
-    public StockDataSetIterator initializeTestIterator(List<WIGDataEntity> entities) {
-        return new StockDataSetIterator(entities, properties.getBatchSize(), properties.getBptt(), properties.getDaysAhead(), minValuesInFeature, maxValuesInFeature);
-    }
-
-    public StockDataSetIterator initializeValidationIterator(List<WIGDataEntity> entities) {
+    public StockDataSetIterator initializeIterator(List<DataEntity> entities) {
         return new StockDataSetIterator(entities, properties.getBatchSize(), properties.getBptt(), properties.getDaysAhead(), minValuesInFeature, maxValuesInFeature);
     }
 
@@ -151,5 +171,4 @@ public class StockPricePrediction {
             minValuesInFeature[i] = value;
         }
     }
-
 }

@@ -20,8 +20,7 @@ import org.springframework.stereotype.Component;
 public class RecurrentNetwork {
     private static final double learningRate = 0.01;
     private static final int seed = 1;
-    private static final int lstmLayer1Size = 256;
-    private static final int denseLayerSize = 32;
+    private static final int lstmLayer1Size = 8;
     private static final double dropoutRatio = 0.5;
 
     private final NeuralNetProperties properties;
@@ -48,16 +47,11 @@ public class RecurrentNetwork {
                         .gateActivationFunction(Activation.HARDSIGMOID)
                         .dropOut(dropoutRatio)
                         .build())
-                .layer(1, new DenseLayer.Builder()
+                .layer(1, new RnnOutputLayer.Builder()
                         .nIn(lstmLayer1Size)
-                        .nOut(denseLayerSize)
-                        .activation(Activation.RELU)
-                        .build())
-                .layer(2, new RnnOutputLayer.Builder()
-                        .nIn(denseLayerSize)
                         .nOut(nOut)
                         .activation(Activation.IDENTITY)
-                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .lossFunction(LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR)
                         .build())
                 .backpropType(BackpropType.TruncatedBPTT)
                 .tBPTTForwardLength(properties.getBptt())

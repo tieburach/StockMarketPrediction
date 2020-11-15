@@ -4,6 +4,7 @@ import com.tieburach.stockprediction.model.DataEntity;
 import com.tieburach.stockprediction.model.WIGDataEntity;
 import com.tieburach.stockprediction.prediction.StockPricePrediction;
 import com.tieburach.stockprediction.repository.WIGDataRepository;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -30,10 +31,11 @@ public class MainController {
 
     @GetMapping("/predict")
     public ResponseEntity<?> predict() {
-        List<WIGDataEntity> entities = repository.getAllByDateBetween(START, END);
+//        List<WIGDataEntity> entities = repository.getAllByDateBetween(START, END);
         List<DataEntity> features = repository.getAllFeatures();
-        pricePrediction.initialize(entities);
+        pricePrediction.initialize(features);
         pricePrediction.predict();
+
         return ResponseEntity.ok().build();
     }
 }
