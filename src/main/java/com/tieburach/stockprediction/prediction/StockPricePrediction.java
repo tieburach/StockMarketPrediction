@@ -76,8 +76,8 @@ public class StockPricePrediction {
 
 
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(8))
-                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(5, TimeUnit.MINUTES))
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(2))
+                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(6, TimeUnit.MINUTES))
                 .scoreCalculator(new DataSetLossCalculator(myTestData, true))
                 .evaluateEveryNEpochs(1)
                 .build();
@@ -98,7 +98,7 @@ public class StockPricePrediction {
 
     private void generateTestData(List<WIGDataEntity> stockDataList) {
         int bptt = properties.getBptt();
-        int window = bptt + 1;
+        int window = bptt + properties.getDaysAhead();
         List<Pair<INDArray, INDArray>> test = new ArrayList<>();
         for (int i = 0; i < stockDataList.size() - window; i++) {
             INDArray input = Nd4j.create(new int[]{bptt, VECTOR_SIZE}, 'f');
@@ -109,7 +109,7 @@ public class StockPricePrediction {
                 input.putScalar(new int[]{j - i, 2}, (stock.getLow() - minValuesInFeature[2]) / (maxValuesInFeature[2] - minValuesInFeature[2]));
                 input.putScalar(new int[]{j - i, 3}, (stock.getHigh() - minValuesInFeature[3]) / (maxValuesInFeature[3] - minValuesInFeature[3]));
             }
-            WIGDataEntity stock = stockDataList.get(i + bptt);
+            WIGDataEntity stock = stockDataList.get(i + window - 1);
             INDArray label = Nd4j.create(new int[]{1}, 'f');
             label.putScalar(new int[]{0}, stock.getClose());
             test.add(new Pair<>(input, label));
@@ -135,11 +135,11 @@ public class StockPricePrediction {
 
 
     public StockDataSetIterator initializeTestIterator(List<WIGDataEntity> entities) {
-        return new StockDataSetIterator(entities, properties.getBatchSize(), properties.getBptt(), minValuesInFeature, maxValuesInFeature);
+        return new StockDataSetIterator(entities, properties.getBatchSize(), properties.getBptt(), properties.getDaysAhead(), minValuesInFeature, maxValuesInFeature);
     }
 
     public StockDataSetIterator initializeValidationIterator(List<WIGDataEntity> entities) {
-        return new StockDataSetIterator(entities, properties.getBatchSize(), properties.getBptt(), minValuesInFeature, maxValuesInFeature);
+        return new StockDataSetIterator(entities, properties.getBatchSize(), properties.getBptt(), properties.getDaysAhead(), minValuesInFeature, maxValuesInFeature);
     }
 
 

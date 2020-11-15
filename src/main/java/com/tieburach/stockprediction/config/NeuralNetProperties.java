@@ -13,6 +13,6 @@ public class NeuralNetProperties {
     private int bptt;
     @Value("${net.batch_size}")
     private int batchSize;
-    @Value("${net.days_to_show}")
-    private int daysToShow;
+    @Value("${net.days_ahead}")
+    private int daysAhead;
 }

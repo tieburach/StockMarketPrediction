@@ -14,13 +14,15 @@ public class StockDataSetIterator implements DataSetIterator {
     public static final int VECTOR_SIZE = 4;
     private final int batchSize;
     private final int bptt;
+    private final int dayAhead;
     private final double[] minValuesInFeature;
     private final double[] maxValuesInFeature;
     private final LinkedList<Integer> startOffset = new LinkedList<>();
     private final List<WIGDataEntity> train;
 
-    public StockDataSetIterator(List<WIGDataEntity> wigDataEntities, int batchSize, int bptt,
+    public StockDataSetIterator(List<WIGDataEntity> wigDataEntities, int batchSize, int bptt, int dayAhead,
                                 double[] minValuesInFeature, double[] maxValuesInFeature) {
+        this.dayAhead = dayAhead;
         this.batchSize = batchSize;
         this.bptt = bptt;
         this.train = wigDataEntities;
@@ -31,7 +33,7 @@ public class StockDataSetIterator implements DataSetIterator {
 
     private void initializeOffsets() {
         startOffset.clear();
-        int window = bptt + 1;
+        int window = bptt + dayAhead;
         for (int i = 0; i < train.size() - window; i++) {
             startOffset.add(i);
         }
@@ -45,13 +47,11 @@ public class StockDataSetIterator implements DataSetIterator {
         for (int index = 0; index < actualMiniBatchSize; index++) {
             int start = startOffset.removeFirst();
             WIGDataEntity currentRecord = train.get(start);
-            WIGDataEntity nextRecord;
             for (int i = start; i < start + bptt; i++) {
                 int column = i - start;
                 populateINDArray(input, index, currentRecord, column);
-                nextRecord = train.get(i + 1);
-                populateINDArrayLabel(label, index, nextRecord, column);
-                currentRecord = nextRecord;
+                populateINDArrayLabel(label, index, train.get(i + dayAhead), column);
+                currentRecord = train.get(i + 1);
             }
             if (startOffset.size() == 0) {
                 break;
@@ -73,7 +73,7 @@ public class StockDataSetIterator implements DataSetIterator {
 
     @Override
     public int totalExamples() {
-        return train.size() - bptt - 1;
+        return train.size() - bptt - dayAhead;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.tieburach.stockprediction.controller;
 
+import com.tieburach.stockprediction.model.DataEntity;
 import com.tieburach.stockprediction.model.WIGDataEntity;
 import com.tieburach.stockprediction.prediction.StockPricePrediction;
 import com.tieburach.stockprediction.repository.WIGDataRepository;
@@ -16,8 +17,8 @@ import java.util.List;
 
 @RequestMapping
 public class MainController {
-    private static final LocalDate START = LocalDate.of(2000, 1, 1);
-    private static final LocalDate END = LocalDate.of(2019, 1, 1);
+    private static final LocalDate START = LocalDate.of(2002, 1, 1);
+    private static final LocalDate END = LocalDate.of(2013, 1, 1);
     private final WIGDataRepository repository;
     private final StockPricePrediction pricePrediction;
 
@@ -30,6 +31,7 @@ public class MainController {
     @GetMapping("/predict")
     public ResponseEntity<?> predict() {
         List<WIGDataEntity> entities = repository.getAllByDateBetween(START, END);
+        List<DataEntity> features = repository.getAllFeatures();
         pricePrediction.initialize(entities);
         pricePrediction.predict();
         return ResponseEntity.ok().build();
