@@ -33,7 +33,7 @@ public class StockPricePrediction {
     private MultiLayerNetwork net;
     private final NeuralNetProperties properties;
     private final RecurrentNetwork recurrentNetwork;
-    private final double splitRatio = 0.8;
+    private final double splitRatio = 0.7;
     private final double splitRatio2 = 0.9;
     private final int totalOutcomes = 1;
     private final double[] minValuesInFeature = new double[VECTOR_SIZE];
