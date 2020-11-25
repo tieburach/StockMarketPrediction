@@ -5,12 +5,9 @@ import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +19,6 @@ public class RecurrentNetwork {
     private static final int seed = 1;
     private static final int lstmLayer1Size = 8;
     private static final double dropoutRatio = 0.5;
-
     private final NeuralNetProperties properties;
 
     @Autowired
@@ -50,7 +46,7 @@ public class RecurrentNetwork {
                 .layer(1, new RnnOutputLayer.Builder()
                         .nIn(lstmLayer1Size)
                         .nOut(nOut)
-                        .activation(Activation.IDENTITY)
+                        .activation(Activation.TANH)
                         .lossFunction(LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR)
                         .build())
                 .backpropType(BackpropType.TruncatedBPTT)

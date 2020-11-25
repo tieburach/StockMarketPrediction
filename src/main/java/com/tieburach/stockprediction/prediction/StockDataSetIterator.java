@@ -1,6 +1,6 @@
 package com.tieburach.stockprediction.prediction;
 
-import com.tieburach.stockprediction.model.DataEntity;
+import com.tieburach.stockprediction.model.WIGDataEntity;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -18,9 +18,9 @@ public class StockDataSetIterator implements DataSetIterator {
     private final double[] minValuesInFeature;
     private final double[] maxValuesInFeature;
     private final LinkedList<Integer> startOffset = new LinkedList<>();
-    private final List<DataEntity> train;
+    private final List<WIGDataEntity> train;
 
-    public StockDataSetIterator(List<DataEntity> dataEntities, int batchSize, int bptt, int dayAhead,
+    public StockDataSetIterator(List<WIGDataEntity> dataEntities, int batchSize, int bptt, int dayAhead,
                                 double[] minValuesInFeature, double[] maxValuesInFeature) {
         this.dayAhead = dayAhead;
         this.batchSize = batchSize;
@@ -46,7 +46,7 @@ public class StockDataSetIterator implements DataSetIterator {
         INDArray label = Nd4j.create(new int[]{actualMiniBatchSize, 1, bptt}, 'f');
         for (int index = 0; index < actualMiniBatchSize; index++) {
             int start = startOffset.removeFirst();
-            DataEntity currentRecord = train.get(start);
+            WIGDataEntity currentRecord = train.get(start);
             for (int i = start; i < start + bptt; i++) {
                 int column = i - start;
                 populateINDArray(input, index, currentRecord, column);
@@ -60,7 +60,7 @@ public class StockDataSetIterator implements DataSetIterator {
         return new DataSet(input, label);
     }
 
-    private void populateINDArray(INDArray array, int index, DataEntity dataElement, int column) {
+    private void populateINDArray(INDArray array, int index, WIGDataEntity dataElement, int column) {
         array.putScalar(new int[]{index, 0, column}, (dataElement.getOpen() - minValuesInFeature[0]) / (maxValuesInFeature[0] - minValuesInFeature[0]));
         array.putScalar(new int[]{index, 1, column}, (dataElement.getClose() - minValuesInFeature[1]) / (maxValuesInFeature[1] - minValuesInFeature[1]));
         array.putScalar(new int[]{index, 2, column}, (dataElement.getLow() - minValuesInFeature[2]) / (maxValuesInFeature[2] - minValuesInFeature[2]));

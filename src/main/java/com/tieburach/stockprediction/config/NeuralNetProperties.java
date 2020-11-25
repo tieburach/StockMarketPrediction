@@ -15,4 +15,6 @@ public class NeuralNetProperties {
     private int batchSize;
     @Value("${net.days_ahead}")
     private int daysAhead;
+    @Value("${net.epochs}")
+    private int epochs;
 }
