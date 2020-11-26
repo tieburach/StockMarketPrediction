@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class RecurrentNetwork {
     private static final double learningRate = 0.01;
-    private static final int seed = 1;
     private static final int lstmLayer1Size = 8;
     private static final double dropoutRatio = 0.5;
     private final NeuralNetProperties properties;
@@ -28,11 +27,11 @@ public class RecurrentNetwork {
 
     public MultiLayerConfiguration getMultiLayerConfiguration(int nIn, int nOut) {
         return new NeuralNetConfiguration.Builder()
-                .seed(seed)
+                .seed(System.currentTimeMillis())
                 .learningRate(learningRate)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .weightInit(WeightInit.XAVIER)
-                .updater(Updater.RMSPROP)
+                .weightInit(WeightInit.RELU)
+                .updater(Updater.SGD)
                 .regularization(true)
                 .l2(1e-4)
                 .list()

@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "\"FEATURES\"")
+@Table(name = "\"stockvalues\"")
 public class DataEntity {
     @Id
     private LocalDate date;
@@ -21,12 +21,20 @@ public class DataEntity {
     private Double close;
     private Double high;
     private Double low;
-    private Double spx_open;
-    private Double spx_close;
-    private Double spx_high;
-    private Double spx_low;
-    private Double dax_open;
-    private Double dax_close;
-    private Double dax_high;
-    private Double dax_low;
+    private Double EUR_Otwarcie;
+    private Double EUR_Najwyzszy;
+    private Double EUR_Najnizszy;
+    private Double EUR_Zamkniecie;
+    private Double PKO_Otwarcie;
+    private Double PKO_Najwyzszy;
+    private Double PKO_Najnizszy;
+    private Double PKO_Zamkniecie;
+    private Double USD_Otwarcie;
+    private Double USD_Najwyzszy;
+    private Double USD_Najnizszy;
+    private Double USD_Zamkniecie;
+    private Double KGH_Otwarcie;
+    private Double KGH_Najwyzszy;
+    private Double KGH_Najnizszy;
+    private Double KGH_Zamkniecie;
 }

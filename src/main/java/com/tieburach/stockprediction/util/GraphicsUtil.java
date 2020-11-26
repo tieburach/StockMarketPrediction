@@ -22,13 +22,13 @@ public class GraphicsUtil {
         int min = minValue(predictedValues, actualValues);
         int max = maxValue(predictedValues, actualValues);
         final XYSeriesCollection dataSet = new XYSeriesCollection();
-        addSeries(dataSet, index, predictedValues, "Predicts");
-        addSeries(dataSet, index, actualValues, "Actuals");
+        addSeries(dataSet, index, predictedValues, "Wartości prognozowane");
+        addSeries(dataSet, index, actualValues, "Wartości rzeczywiste");
         ChartFactory.setChartTheme(StandardChartTheme.createLegacyTheme());
         final JFreeChart chart = ChartFactory.createXYLineChart(
-                "Prediction",
-                "Index",
-                "WIG20 - CLOSE",
+                "Predykcja wartości zamknięcia WIG20",
+                "Numer kroku",
+                "Wartość zamknięcia WIG20",
                 dataSet,
                 PlotOrientation.VERTICAL,
                 true,
