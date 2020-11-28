@@ -27,11 +27,11 @@ public class RecurrentNetwork {
 
     public MultiLayerConfiguration getMultiLayerConfiguration(int nIn, int nOut) {
         return new NeuralNetConfiguration.Builder()
-                .seed(System.currentTimeMillis())
+                .seed(1)
                 .learningRate(learningRate)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .weightInit(WeightInit.RELU)
-                .updater(Updater.SGD)
+                .weightInit(WeightInit.XAVIER)
+                .updater(Updater.RMSPROP)
                 .regularization(true)
                 .l2(1e-4)
                 .list()

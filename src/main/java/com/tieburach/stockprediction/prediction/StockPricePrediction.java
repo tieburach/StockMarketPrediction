@@ -173,11 +173,15 @@ public class StockPricePrediction {
             actuals[i] = actualValue;
         }
         double mape = 0;
+        double smape = 0;
         for (int i = 0; i < predicts.length; i++) {
             mape += Math.abs((actuals[i] - predicts[i]) / actuals[i]);
+            smape += (Math.abs(predicts[i] - actuals[i]) ) / ((Math.abs(predicts[i]) + Math.abs(actuals[i]))/2 );
         }
         mape = (mape / predicts.length) * 100;
-//        System.out.println("Mape ERROR IN %: " + mape);
+        smape = (smape / predicts.length) *100;
+        System.out.println("Mape ERROR IN %: " + mape);
+        System.out.println("SMAPE ERROR: " + smape);
 
         if (draw) {
             GraphicsUtil.draw(predicts, actuals);
