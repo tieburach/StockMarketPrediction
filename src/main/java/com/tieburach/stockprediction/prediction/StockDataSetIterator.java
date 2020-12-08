@@ -10,6 +10,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * DataSet iterator class that is used in neural network
+ */
 public class StockDataSetIterator implements DataSetIterator {
     public static final int VECTOR_SIZE = 4;
     private final int batchSize;
@@ -83,17 +86,7 @@ public class StockDataSetIterator implements DataSetIterator {
 
     @Override
     public int totalOutcomes() {
-        return VECTOR_SIZE;
-    }
-
-    @Override
-    public boolean resetSupported() {
-        return false;
-    }
-
-    @Override
-    public boolean asyncSupported() {
-        return false;
+        return 1;
     }
 
     @Override
@@ -117,21 +110,6 @@ public class StockDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public DataSetPreProcessor getPreProcessor() {
-        throw new UnsupportedOperationException("Not Implemented");
-    }
-
-    @Override
-    public void setPreProcessor(DataSetPreProcessor dataSetPreProcessor) {
-        throw new UnsupportedOperationException("Not Implemented");
-    }
-
-    @Override
-    public List<String> getLabels() {
-        throw new UnsupportedOperationException("Not Implemented");
-    }
-
-    @Override
     public boolean hasNext() {
         return startOffset.size() > 0;
     }
@@ -141,5 +119,28 @@ public class StockDataSetIterator implements DataSetIterator {
         return next(batchSize);
     }
 
+    @Override
+    public boolean asyncSupported() {
+        return false;
+    }
 
+    @Override
+    public boolean resetSupported() {
+        return false;
+    }
+
+    @Override
+    public DataSetPreProcessor getPreProcessor() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<String> getLabels() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setPreProcessor(DataSetPreProcessor dataSetPreProcessor) {
+        throw new UnsupportedOperationException();
+    }
 }

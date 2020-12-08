@@ -6,6 +6,11 @@ import com.tieburach.stockprediction.model.DataEntity;
 import com.tieburach.stockprediction.util.ExcelUtils;
 import com.tieburach.stockprediction.util.GraphicsUtil;
 import javafx.util.Pair;
+import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
+import org.deeplearning4j.earlystopping.EarlyStoppingResult;
+import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
+import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
+import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -13,6 +18,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,15 +29,17 @@ import java.util.List;
 
 @Component
 public class StockPricePrediction {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StockPricePrediction.class);
+    public static final int TOTAL_OUTCOMES = 1;
     public static final int VECTOR_SIZE = 4;
     private final NeuralNetProperties properties;
     private final RecurrentNetwork recurrentNetwork;
     private final double[] minValuesInFeature = new double[VECTOR_SIZE];
     private final double[] maxValuesInFeature = new double[VECTOR_SIZE];
     private MultiLayerNetwork bestNetwork;
-    private double trainCorrelation = 0;
-    private double validationCorrelation = 0;
-    private double testCorrelation = 0;
+    private double trainCorrelation;
+    private double validationCorrelation;
+    private double testCorrelation;
 
     @Autowired
     public StockPricePrediction(NeuralNetProperties properties, RecurrentNetwork recurrentNetwork) {
@@ -38,6 +47,11 @@ public class StockPricePrediction {
         this.recurrentNetwork = recurrentNetwork;
     }
 
+    /**
+     * Method to initialize minimum and maximum arrays
+     *
+     * @param wigDataEntities list of all entities
+     */
     private void initializeMinAndMax(List<DataEntity> wigDataEntities) {
         for (int i = 0; i < maxValuesInFeature.length; i++) {
             maxValuesInFeature[i] = Double.MIN_VALUE;
@@ -52,7 +66,12 @@ public class StockPricePrediction {
         }
     }
 
-    public void initialize(List<DataEntity> entities, int number) {
+    /**
+     * Method that uses EarlyStoppingTrainer to end learning process
+     *
+     * @param entities stock data list
+     */
+    public void predictWithEarlyStopping(List<DataEntity> entities) {
         initializeMinAndMax(entities);
         double splitRatio = 0.7;
         int index = (int) Math.round(entities.size() * splitRatio);
@@ -62,13 +81,92 @@ public class StockPricePrediction {
         List<DataEntity> learningEntities = entities.subList(0, index);
         List<DataEntity> validationEntities = entities.subList(index, index2);
         List<DataEntity> testEntities = entities.subList(index2, entities.size());
-        List<Pair<INDArray, INDArray>> testData = generateTestData(testEntities, number);
+        List<Pair<INDArray, INDArray>> testData = generateTestData(testEntities, properties.getDaysAhead());
 
-        int totalOutcomes = 1;
-        MultiLayerConfiguration myNetworkConfiguration = recurrentNetwork.getMultiLayerConfiguration(VECTOR_SIZE, totalOutcomes);
-        DataSetIterator trainDataIterator = initializeIterator(learningEntities, number);
-        DataSetIterator validationDataIterator = initializeIterator(validationEntities, number);
-        DataSetIterator testDataIterator = initializeIterator(testEntities, number);
+        MultiLayerConfiguration myNetworkConfiguration = recurrentNetwork.getMultiLayerConfiguration(VECTOR_SIZE, TOTAL_OUTCOMES);
+        DataSetIterator trainDataIterator = initializeIterator(learningEntities, properties.getDaysAhead());
+        DataSetIterator validationDataIterator = initializeIterator(validationEntities, properties.getDaysAhead());
+        DataSetIterator testDataIterator = initializeIterator(testEntities, properties.getDaysAhead());
+
+        EarlyStoppingConfiguration<MultiLayerNetwork> earlyStoppingConfig = new EarlyStoppingConfiguration.Builder()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(50))
+                .scoreCalculator(new DataSetLossCalculator(validationDataIterator, true))
+                .evaluateEveryNEpochs(1)
+                .build();
+        EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(earlyStoppingConfig, myNetworkConfiguration, trainDataIterator);
+
+        EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+        bestNetwork = result.getBestModel();
+
+
+        RegressionEvaluation regressionEvaluation = new RegressionEvaluation(1);
+        int currentBatch = 0;
+        trainCorrelation = 0;
+        while (trainDataIterator.hasNext()) {
+            DataSet next = trainDataIterator.next();
+            INDArray output = bestNetwork.output(next.getFeatures());
+            regressionEvaluation.eval(next.getLabels(), output);
+            trainCorrelation += regressionEvaluation.averagecorrelationR2();
+            currentBatch++;
+        }
+        trainCorrelation = trainCorrelation / currentBatch;
+        validationDataIterator.reset();
+
+        currentBatch = 0;
+        validationCorrelation = 0;
+        while (validationDataIterator.hasNext()) {
+            DataSet next = validationDataIterator.next();
+            INDArray output = bestNetwork.output(next.getFeatures());
+            regressionEvaluation.eval(next.getLabels(), output);
+            validationCorrelation += regressionEvaluation.averagecorrelationR2();
+            currentBatch++;
+
+        }
+        validationCorrelation = validationCorrelation / currentBatch;
+        validationDataIterator.reset();
+
+        currentBatch = 0;
+        testCorrelation = 0;
+        while (testDataIterator.hasNext()) {
+            DataSet next = testDataIterator.next();
+            INDArray output = bestNetwork.output(next.getFeatures());
+            regressionEvaluation.eval(next.getLabels(), output);
+            testCorrelation += regressionEvaluation.averagecorrelationR2();
+            currentBatch++;
+        }
+        testCorrelation = testCorrelation / currentBatch;
+        testDataIterator.reset();
+
+
+        LOGGER.info("Train correlation: " + trainCorrelation);
+        LOGGER.info("Validation correlation: " + validationCorrelation);
+        LOGGER.info("Test correlation: " + testCorrelation);
+
+        predict(bestNetwork, true, testData);
+    }
+
+
+    /**
+     * Method that looks on best mape and fixed number of epochs
+     *
+     * @param entities stock data list
+     */
+    public void predictWithoutEarlyStopping(List<DataEntity> entities) {
+        initializeMinAndMax(entities);
+        double splitRatio = 0.7;
+        int index = (int) Math.round(entities.size() * splitRatio);
+        double splitRatio2 = 0.85;
+        int index2 = (int) Math.round(entities.size() * splitRatio2);
+
+        List<DataEntity> learningEntities = entities.subList(0, index);
+        List<DataEntity> validationEntities = entities.subList(index, index2);
+        List<DataEntity> testEntities = entities.subList(index2, entities.size());
+        List<Pair<INDArray, INDArray>> testData = generateTestData(testEntities, properties.getDaysAhead());
+
+        MultiLayerConfiguration myNetworkConfiguration = recurrentNetwork.getMultiLayerConfiguration(VECTOR_SIZE, TOTAL_OUTCOMES);
+        DataSetIterator trainDataIterator = initializeIterator(learningEntities, properties.getDaysAhead());
+        DataSetIterator validationDataIterator = initializeIterator(validationEntities, properties.getDaysAhead());
+        DataSetIterator testDataIterator = initializeIterator(testEntities, properties.getDaysAhead());
 
         MultiLayerNetwork network = new MultiLayerNetwork(myNetworkConfiguration);
 
@@ -79,17 +177,13 @@ public class StockPricePrediction {
             }
             trainDataIterator.reset();
             network.rnnClearPreviousState();
-
-            System.out.println("Currently training epoch: " + i);
-
+            LOGGER.info("Currently training epoch: " + i);
             double newMape = predict(network, false, testData);
 
-
             if (newMape < bestMape) {
-                System.out.println("New best mape is:" + newMape);
+                LOGGER.info("New best mape is:" + newMape);
                 bestMape = newMape;
                 bestNetwork = network.clone();
-
                 RegressionEvaluation regressionEvaluation = new RegressionEvaluation(1);
                 int currentBatch = 0;
                 trainCorrelation = 0;
@@ -103,7 +197,6 @@ public class StockPricePrediction {
                 trainCorrelation = trainCorrelation / currentBatch;
                 validationDataIterator.reset();
 
-                regressionEvaluation = new RegressionEvaluation(1);
                 currentBatch = 0;
                 validationCorrelation = 0;
                 while (validationDataIterator.hasNext()) {
@@ -117,7 +210,6 @@ public class StockPricePrediction {
                 validationCorrelation = validationCorrelation / currentBatch;
                 validationDataIterator.reset();
 
-                regressionEvaluation = new RegressionEvaluation(1);
                 currentBatch = 0;
                 testCorrelation = 0;
                 while (testDataIterator.hasNext()) {
@@ -131,9 +223,10 @@ public class StockPricePrediction {
                 testDataIterator.reset();
             }
         }
-        System.out.println("Train correlation: " + trainCorrelation);
-        System.out.println("Validation correlation: " + validationCorrelation);
-        System.out.println("Test correlation: " + testCorrelation);
+
+        LOGGER.info("Train correlation: " + trainCorrelation);
+        LOGGER.info("Validation correlation: " + validationCorrelation);
+        LOGGER.info("Test correlation: " + testCorrelation);
 
         predict(bestNetwork, true, testData);
     }
@@ -173,16 +266,11 @@ public class StockPricePrediction {
             actuals[i] = actualValue;
         }
         double mape = 0;
-        double smape = 0;
         for (int i = 0; i < predicts.length; i++) {
             mape += Math.abs((actuals[i] - predicts[i]) / actuals[i]);
-            smape += (Math.abs(predicts[i] - actuals[i]) ) / ((Math.abs(predicts[i]) + Math.abs(actuals[i]))/2 );
         }
         mape = (mape / predicts.length) * 100;
-        smape = (smape / predicts.length) *100;
-        System.out.println("Mape ERROR IN %: " + mape);
-        System.out.println("SMAPE ERROR: " + smape);
-
+        LOGGER.info("Mape ERROR IN %: " + mape);
         if (draw) {
             GraphicsUtil.draw(predicts, actuals);
             ExcelUtils.writeToExcel(predicts, actuals);
